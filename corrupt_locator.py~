@@ -1,0 +1,20 @@
+import os
+from PIL import Image
+
+rootdir = '/mnt/raid0/Projects/Kaggle/GoogleLandmarkRecognition/train/'
+total_corrupt = 0
+
+for subdir, dirs, files in os.walk(rootdir):
+    for file in files:
+        if file.endswith('.jpg'):
+            try:
+                img = Image.open(os.path.join(subdir,file)) # open the file as an image
+                img.verify() #verify the file is indeed an image
+            except(IOError, SyntaxError) as e:
+                print('Corrupt file:',subdir + '/' + file)
+                total_corrupt = total_corrupt + 1
+                os.remove(os.path.join(subdir,file))
+                print('Removed: ', subdir + '/' + file)
+
+print('Total Corrupt: ', total_corrupt)
+        
