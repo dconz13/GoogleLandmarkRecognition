@@ -40,43 +40,47 @@ test_datagen = ImageDataGenerator(rescale=1./255)
 
 train_generator = train_datagen.flow_from_directory(
         raid_train_dir,
-        target_size=(150, 150),
+        target_size=(224, 224),
         batch_size=500,
         class_mode='categorical')
 
 valid_generator = test_datagen.flow_from_directory(
         raid_valid_dir,
-        target_size=(150,150),
+        target_size=(224,224),
         batch_size=500,
         class_mode='categorical')
 
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.models import Sequential
 
-#from keras.applications.resnet50 import ResNet50
-#from keras.applications.resnet50 import preprocess_input, decode_predictions
+from keras.applications.resnet50 import ResNet50
+from keras.applications.resnet50 import preprocess_input, decode_predictions
 
-from keras.applications.vgg16 import VGG16
-from keras.preprocessing import image
-from keras.applications.vgg16 import preprocess_input
 
 def create_model():
     model = Sequential()
     model.add(Flatten(input_shape=model.output_shape[1:]))
     model.add(Dense(14951, activation='relu'))
     model.add(Dropout(0.2))
-    model.add(Dense(14951, activation='softmax'))
+    model.add(Dense(1, activation='softmax'))
     return model
 
-from keras.callbacks import ModelCheckpoint 
+def run_resnet(): # Only run this when you need bottleneck features generated. Takes about 5 hours.
+    bottleneck_features = resnet.predict_generator(train_generator, verbose=1)
+    # save the output as a Numpy array
+    np.save(open('bottleneck_features/bottleneck_features_train.npy', 'wb'), bottleneck_features)
+
+    bottleneck_features = resnet.predict_generator(valid_generator, verbose=1)
+    # save the output as a Numpy array
+    np.save(open('bottleneck_features/bottleneck_features_valid.npy', 'wb'), bottleneck_features)
+    
+
+
+#from keras.callbacks import ModelCheckpoint 
 
 #resnet = ResNet50(include_top=False, weights='imagenet')
-vgg16 = VGG16(weights='imagenet', include_top=False)
+model = create_model()
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-#bottleneck_features_train = resnet.predict_generator(train_generator)
-bottleneck_features_train = vgg16.predict_generator(train_generator)
-# save the output as a Numpy array
-np.save(open('bottleneck_features/bottleneck_features_train.npy', 'w'), bottleneck_features_train)
 
-#bottleneck_features_validation = resnet.predict_generator(valid_generator)
-#np.save(open('bottleneck_features/bottleneck_features_validation.npy', 'w'), bottleneck_features_validation)
+
