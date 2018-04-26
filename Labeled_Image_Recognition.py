@@ -57,17 +57,18 @@ valid_generator = test_datagen.flow_from_directory(
 
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.models import Sequential
-
+from keras.callbacks import ModelCheckpoint
 from keras.applications.resnet50 import ResNet50
 from keras.applications.resnet50 import preprocess_input, decode_predictions
 
 
-def create_model():
+def create_model(train_data):
     model = Sequential()
-    model.add(Flatten(input_shape=model.output_shape[1:]))
+    model.add(Flatten(input_shape=train_date.shape[1:]))
     model.add(Dense(14951, activation='relu'))
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
     return model
 
 def run_resnet(): # Only run this when you need bottleneck features generated. Takes about 5 hours.
@@ -83,18 +84,22 @@ def run_resnet(): # Only run this when you need bottleneck features generated. T
 
 
 
-train_data = np.load(open('bottleneck_features/bottleneck_features_train.npy'))
+train_data = np.load(open('bottleneck_features/bottleneck_features_train.npy', 'rb'))
 train_labels = np.array([0] * num_train_dirs + [1] * num_train_dirs)
 
-valid_data = np.load(open('bottleneck_features/bottleneck_features_valid.npy'))
-valid_labels = np.arrray([0] * num_valid_dirs + [1] * num_valid_dirs)
+valid_data = np.load(open('bottleneck_features/bottleneck_features_valid.npy', 'rb'))
+valid_labels = np.array([0] * num_valid_dirs + [1] * num_valid_dirs)
 
 model = create_model()
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+
+checkpointer = ModelCheckpoint(filepath='weights/first_try.hdf5', verbose=1, save_best_only=True)
 
 model.fit(train_data, train_labels,
           epochs=50,
           batch_size=500,
-          validation_data=(valid_data, valid_labels))
-model.save_weights('weights/first_try.h5')
+          verbose=1,
+          validation_data=(valid_data, valid_labels),
+          callbacks=[checkpointer])
+#model.save_weights('weights/first_try.h5')
 
