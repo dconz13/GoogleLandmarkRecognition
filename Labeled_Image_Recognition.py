@@ -14,6 +14,11 @@ raid_test_dir = '/mnt/raid0/Projects/Kaggle/GoogleLandmarkRetrieval/test/'
 train_csv = '~/Documents/Kaggle/GoogleLandmarkRecognition/train.csv'
 test_csv = '~/Documents/Kaggle/GoogleLandmarkRecognition/test.csv'
 
+# Constants
+num_train_dirs = 14951
+num_valid_dirs = 13168
+
+
 # use this function to load the train and test data
 def load_dataset(path):
     data = load_files(path)
@@ -66,6 +71,7 @@ def create_model():
     return model
 
 def run_resnet(): # Only run this when you need bottleneck features generated. Takes about 5 hours.
+    resnet = ResNet50(include_top=False, weights='imagenet')
     bottleneck_features = resnet.predict_generator(train_generator, verbose=1)
     # save the output as a Numpy array
     np.save(open('bottleneck_features/bottleneck_features_train.npy', 'wb'), bottleneck_features)
@@ -76,11 +82,19 @@ def run_resnet(): # Only run this when you need bottleneck features generated. T
     
 
 
-#from keras.callbacks import ModelCheckpoint 
 
-#resnet = ResNet50(include_top=False, weights='imagenet')
+train_data = np.load(open('bottleneck_features/bottleneck_features_train.npy'))
+train_labels = np.array([0] * num_train_dirs + [1] * num_train_dirs)
+
+valid_data = np.load(open('bottleneck_features/bottleneck_features_valid.npy'))
+valid_labels = np.arrray([0] * num_valid_dirs + [1] * num_valid_dirs)
+
 model = create_model()
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-
+model.fit(train_data, train_labels,
+          epochs=50,
+          batch_size=500,
+          validation_data=(valid_data, valid_labels))
+model.save_weights('weights/first_try.h5')
 
